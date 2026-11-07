@@ -18,9 +18,38 @@
 
 InterviewGuide 是一个集成了简历分析、模拟面试（文字 + 语音）、面试安排、知识库管理、知识库题库面试和多模型配置的智能面试辅助平台。系统利用大语言模型（LLM）、向量数据库、Redis Stream 异步任务和实时语音技术，为求职者、HR 和培训机构提供智能化的简历评估、面试练习、知识库问答和面试日程管理能力。
 
+## 二次开发说明（本仓库改动）
+
+> 本仓库 fork 自 [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)（JavaGuide 出品，AGPL-3.0），上游功能全部保留，以下为本仓库新增改动，逐文件可核对（`git diff upstream/master main`）。
+
+### 1. Spring Security + JWT 登录鉴权（原项目无认证）
+
+- **后端**（`modules/auth/`）：`SecurityConfig` 过滤链 + `JwtAuthenticationFilter` + `AuthService` / `JwtService`（jjwt 0.12，BCrypt 存储）+ `AuthController`（register / login）；`users` 表走 Flyway 迁移（`V20261025__create_users.sql`）；配套 3 个测试类（Filter / AuthService / JwtService）
+- **前端**：`LoginPage` + `RequireAuth` 路由守卫 + `authStorage`；axios 请求拦截自动注入 `Bearer`，401 统一清凭证回登录页
+- **密钥**：`APP_JWT_SECRET` 环境变量注入（至少 32 字节），yml 默认值仅限本地开发
+
+### 2. 限流身份来源安全加固
+
+- 移除 `X-User-Id` header 回退：该 header 可被客户端伪造，绕过按用户限流；JWT 过滤器认证成功后写入的 userId 是唯一可信来源，匿名请求回落 `anonymous`，由 IP 维度限流兜底
+
+### 3. 本地部署适配
+
+- `docker-compose.override.yml` + `docker/local-s3/`（rustfs / mc 本地对象存储镜像）
+- 前端入口改 8082 端口（避开宿主机 80 冲突）；中文启动 / 关闭 / 用户手册三份
+
+### 实测数据（本地 Docker Compose 6 服务 + DashScope）
+
+| 指标 | 实测值 | 口径 |
+|---|---|---|
+| 简历分析端到端 | **23-36 s** | 上传入队 → PDF 解析 → LLM 结构化分析 → 评分落库（2 次实测） |
+| 重复简历上传 | **0.3 s** | SHA-256 幂等去重命中（`duplicate=true`），直接返回既有分析结果，省 1 次完整 LLM 调用（首次 23-36 s） |
+| 单文件上传上限 | **50 MB** | `spring.servlet.multipart.max-file-size`（可当场复现） |
+
 ## 系统架构
 
-![系统架构图](https://oss.javaguide.cn/xingqiu/pratical-project/interview-guide/interview-guide-architecture-diagram.png)
+![系统架构图](docs/interview-guide-architecture.png)
+
+> 上游原图见 [JavaGuide 项目文档](https://javaguide.cn/zhuanlan/interview-guide.html)。
 
 ## 配套教程
 

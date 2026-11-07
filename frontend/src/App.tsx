@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import Layout from './components/Layout';
+import RequireAuth from './components/RequireAuth';
 import { useEffect, useState, Suspense, lazy } from 'react';
 import { historyApi, type InterviewDetail } from './api/history';
 import type { Difficulty } from './components/UnifiedInterviewModal';
@@ -25,6 +26,7 @@ const InterviewSchedulePage = lazy(() => import('./pages/InterviewSchedulePage')
 const InterviewHubPage = lazy(() => import('./pages/InterviewHubPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const InterviewDetailPanel = lazy(() => import('./components/InterviewDetailPanel'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 
 // Loading component
 const Loading = () => (
@@ -185,7 +187,11 @@ function App() {
     <BrowserRouter>
       <Suspense fallback={<Loading />}>
         <Routes>
-          <Route path="/" element={<Layout />}>
+          {/* 登录/注册:独立全屏页,不需要认证 */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* 业务页面:未登录重定向到 /login */}
+          <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
             {/* 默认重定向到简历管理页面 */}
             <Route index element={<Navigate to="/history" replace />} />
 

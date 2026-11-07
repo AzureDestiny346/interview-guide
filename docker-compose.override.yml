@@ -1,0 +1,65 @@
+# 本机部署适配(由 ZCode 生成,可安全删除——删除后恢复项目原始配置)
+#
+# 1) 端口冲突:RuoYi 项目容器占用 6379/8080;devworld 项目容器占用 6380
+#    容器之间走 compose 内部网络(服务名+内部端口),不受影响;
+#    仅宿主机直连入口变化:Redis 6379→6381,后端 API 8080→8081
+#
+# 2) MinIO 镜像拉取受阻(Docker Hub 匿名拉取收紧 + 镜像加速器限流),
+#    改用自建 RustFS 镜像(S3 兼容,项目 docker-compose.dev.yml 官方支持的同款方案),
+#    二进制来自 GitHub Releases,存于 docker/local-s3/binaries/
+#    存储凭证对齐主配置:minioadmin/minioadmin(app 无需改动)
+
+# 3) 开机自启:5 个常驻服务随 Docker Desktop 自动拉起(createbuckets 是
+#    一次性初始化容器,不加;除非手动 stop,否则重启后自动恢复)
+#
+# 4) 前端端口(2026-10-31):宿主机 80 被 sigma-file-manager.exe 占用,
+#    导致 80:80 映射静默失败(docker ps 无宿主映射、curl 404),
+#    前端入口改为 http://localhost:8082
+services:
+  postgres:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+    ports: !override
+      - "6381:6379"
+
+  app:
+    restart: unless-stopped
+    ports: !override
+      - "8081:8080"
+    build:
+      # 本机适配:Docker 桥接网络出网异常时,构建走 VM 网络栈(host)
+      network: host
+
+  frontend:
+    restart: unless-stopped
+    ports: !override
+      # 宿主机 80 被 sigma-file-manager.exe 占用,改用 8082
+      - "8082:80"
+    build:
+      network: host
+
+  minio:
+    image: interview-s3-rustfs:local
+    build:
+      context: ./docker/local-s3
+      dockerfile: Dockerfile.rustfs
+    command: ["/data"]
+    environment: !override
+      RUSTFS_ACCESS_KEY: minioadmin
+      RUSTFS_SECRET_KEY: minioadmin
+      RUSTFS_RPC_SECRET: ${RUSTFS_RPC_SECRET}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    healthcheck: !override
+      # alpine 无 curl,用 busybox wget 探测 RustFS 就绪端点
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9000/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  createbuckets:
+    image: interview-s3-mc:local
+    build:
+      context: ./docker/local-s3
+      dockerfile: Dockerfile.mc

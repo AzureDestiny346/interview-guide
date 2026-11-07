@@ -1,10 +1,11 @@
 import {Link, Outlet, useLocation, useNavigate} from 'react-router-dom';
 import {motion} from 'framer-motion';
-import {BookOpen, Calendar, ChevronRight, Database, FileStack, MessageSquare, Moon, Settings, Sparkles, Sun, Users,} from 'lucide-react';
+import {BookOpen, Calendar, ChevronRight, Database, FileStack, LogOut, MessageSquare, Moon, Settings, Sparkles, Sun, Users,} from 'lucide-react';
 import {useTheme} from '../hooks/useTheme';
 import {useState} from 'react';
 import UnifiedInterviewModal, {UnifiedInterviewConfig} from './UnifiedInterviewModal';
 import {ROUTES} from '../constants/routes';
+import {getAuthUser, logout} from '../auth/authStorage';
 
 interface NavItem {
   id: string;
@@ -220,11 +221,24 @@ export default function Layout() {
           </div>
         </nav>
 
-        {/* 底部信息 */}
+        {/* 底部:当前用户 + 版本信息 */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-700">
           <div className="px-3 py-2 bg-gradient-to-r from-primary-50 to-indigo-50 dark:from-primary-900/30 dark:to-slate-800 rounded-xl">
-            <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">AI 面试助手 v1.0</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Powered by AI</p>
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-xs text-primary-600 dark:text-primary-400 font-medium truncate">
+                  {getAuthUser()?.username ?? '未登录'}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">AI 面试助手 v1.0</p>
+              </div>
+              <button
+                onClick={logout}
+                title="退出登录"
+                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-white/60 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

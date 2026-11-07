@@ -15,7 +15,11 @@ test-output.txt
 qodana.yaml
 
 app/src/main/resources/application-dev.yml
-/docs
+# docs/ 原作者整目录忽略(教程内容);放行练习产出文档
+/docs/*
+!/docs/00-problem-statement.md
+!/docs/postmortem-*.md
+!/docs/diagrams.html
 SETUP_API_KEYS.md
 
 # AI Assistant documentation
@@ -28,3 +32,17 @@ frontend/test-results/
 frontend/playwright-report/
 /.agents
 skills-lock.json
+
+# Node(前端依赖与构建产物,体积近 500MB)
+node_modules/
+frontend/dist/
+
+# docs 原作者整目录忽略,追加放行本仓库架构图
+!/docs/interview-guide-architecture.png
+
+# 本地大文件与工具产物不入库
+docker/local-s3/binaries/
+graphify-out/
+
+# docs 原作者整目录忽略,追加放行本仓库架构图
+!/docs/interview-guide-architecture.png

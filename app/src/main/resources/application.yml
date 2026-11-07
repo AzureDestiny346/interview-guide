@@ -95,6 +95,10 @@ spring:
 
 # Application custom configuration
 app:
+  # JWT 认证(二次开发):生产环境必须通过 APP_JWT_SECRET 注入独立密钥(至少 32 字节)
+  jwt:
+    secret: ${APP_JWT_SECRET:dev-only-jwt-secret-key-min-32-bytes!!}
+    expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:720}
   ai:
     default-provider: dashscope
     default-embedding-provider: dashscope

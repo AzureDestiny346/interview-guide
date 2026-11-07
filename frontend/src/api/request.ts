@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { clearAuth, getToken } from '../auth/authStorage';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -23,6 +24,17 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 const instance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,
+});
+
+/**
+ * 请求拦截器:自动注入 JWT
+ */
+instance.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -124,6 +136,13 @@ instance.interceptors.response.use(
         // 成功：返回 data
         response.data = result.data;
         return response;
+      }
+      // 登录凭证失效(后端 Security 入口返回 code 401):清凭证回登录页。
+      // 登录/注册接口自身的失败码是 12xxx,不会触发这里。
+      if (result.code === 401 && !response.config.url?.includes('/api/auth/')) {
+        clearAuth();
+        window.location.href = '/login';
+        return Promise.reject(new Error(result.message || '请先登录'));
       }
       // 失败：直接抛出 message
       return Promise.reject(new Error(result.message || '请求失败'));

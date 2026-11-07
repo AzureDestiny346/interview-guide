@@ -1,0 +1,9 @@
+# 自建 RustFS 镜像(替代 Docker Hub 的 minio/minio,规避国内拉取限制)
+# 二进制来源:github.com/rustfs/rustfs releases v1.0.3 (linux-x86_64-musl 静态链接)
+# 用法与官方 rustfs/rustfs 镜像对齐:ENTRYPOINT ["rustfs","server"],数据目录作为参数
+FROM alpine:3.20
+COPY binaries/rustfs /usr/local/bin/rustfs
+RUN chmod +x /usr/local/bin/rustfs && mkdir -p /data
+EXPOSE 9000 9001
+ENTRYPOINT ["rustfs", "server"]
+CMD ["/data"]

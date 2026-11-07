@@ -268,11 +268,9 @@ public class RateLimitAspect {
             return userId.toString();
         }
 
-        userId = request.getHeader("X-User-Id");
-        if (userId != null) {
-            return userId.toString();
-        }
-
+        // 不再回退读 X-User-Id header:该 header 可被客户端伪造绕过按用户限流;
+        // userId attribute 由 JWT 过滤器在认证成功后写入,是唯一可信来源。
+        // 匿名请求回落 "anonymous",另有 IP 维度限流兜底。
         return "anonymous";
     }
 
